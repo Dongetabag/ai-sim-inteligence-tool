@@ -1152,7 +1152,29 @@ ${links.map(l => `${l.text}: ${l.href}`).join('\n')}
                             body: JSON.stringify({
                                 contents: [{
                                     parts: [{
-                                        text: `Extract and summarize key business information from this website content:\n\n${websiteContent}\n\nProvide: Company name, description, products/services, target market, key features, contact information, and any other relevant business details. Format as structured data.`
+                                        text: `Extract and comprehensively analyze ALL business information from this website content. Provide an EXHAUSTIVE analysis including:\n\n${websiteContent}\n\n**Required Information:**
+1. Company name and legal entity name (if available)
+2. Detailed company description and mission
+3. Complete list of products/services with descriptions
+4. Pricing information and pricing strategy
+5. Target market and customer demographics
+6. Key features and unique selling points
+7. Contact information (address, phone, email)
+8. Social media links and presence
+9. Geographic presence and locations
+10. Business model and revenue streams
+11. Operational details (hours, accessibility)
+12. Brand positioning and messaging
+13. Leadership team information (if available)
+14. Company history and milestones (if available)
+15. Partnerships and strategic relationships
+16. Technology stack indicators
+17. Any financial information or metrics
+18. Competitive positioning statements
+19. Growth plans or expansion information
+20. Any other relevant business intelligence
+
+Format as comprehensive structured data with detailed explanations.`
                                     }]
                                 }]
                             })
@@ -1213,15 +1235,44 @@ ${links.map(l => `${l.text}: ${l.href}`).join('\n')}
             let trends = 'Industry trend analysis completed.';
             
             try {
-                const researchPrompt = `Research and provide comprehensive market intelligence for ${companyName}:
+                const researchPrompt = `Research and provide EXHAUSTIVE market intelligence for ${companyName}. This must be a comprehensive deep-dive analysis:
 
-1. Industry overview and market size
-2. Top 3-5 direct competitors
-3. Current industry trends affecting this company
-4. Market positioning
-5. Growth opportunities
+1. **Industry Overview & Market Size**:
+   - Total addressable market (TAM) size and growth rate
+   - Industry growth trends (historical and projected)
+   - Market dynamics and key drivers
+   - Regulatory environment and compliance requirements
+   - Industry lifecycle stage
 
-Provide detailed, data-driven insights.`;
+2. **Direct Competitors Analysis**:
+   - Identify 3-5 SPECIFIC competitors by name and location
+   - For each competitor: company name, location, business model, market positioning
+   - Competitive advantages and disadvantages of each competitor
+   - Market share estimates for competitors
+   - Pricing strategies comparison
+
+3. **Current Industry Trends**:
+   - Emerging trends affecting this industry
+   - Technology disruptions
+   - Consumer behavior shifts
+   - Economic factors impacting the industry
+   - Future outlook (next 2-5 years)
+
+4. **Market Positioning**:
+   - Target company's market segment
+   - Competitive positioning (premium, value, mid-market)
+   - Differentiation factors
+   - Brand positioning analysis
+   - Target demographic analysis
+
+5. **Growth Opportunities & Threats**:
+   - Specific growth opportunities in the market
+   - Market threats and challenges
+   - Expansion potential
+   - Adjacent market opportunities
+   - Risk factors
+
+Provide EXTREMELY detailed, data-driven insights with specific numbers, percentages, and metrics. Include actual competitor names and locations.`;
 
                 const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_API_KEY}`, {
                     method: 'POST',
@@ -1265,7 +1316,7 @@ Provide detailed, data-driven insights.`;
                 'deep': 'Provide an exhaustive analysis with extensive research, detailed competitive intelligence, and comprehensive strategic recommendations.'
             };
             
-            const prompt = `You are a senior business intelligence analyst at Recipe Labs. Generate a COMPREHENSIVE business intelligence report for the following company.
+            const prompt = `You are a senior business intelligence analyst at Recipe Labs. Generate an EXHAUSTIVELY COMPREHENSIVE deep-dive business intelligence report for the following company. This report must match the depth, detail, and analytical rigor of professional BI reports used for strategic decision-making.
 
 **Company Website:** ${url}
 **Company Name:** ${companyName}
@@ -1281,32 +1332,153 @@ ${context}` : ''}
 
 **Analysis Depth:** ${depthInstructions[depth]}
 
-Generate a professional, detailed business intelligence report with these sections:
+**CRITICAL REQUIREMENTS:**
+- This must be a DEEP DIVE analysis with extensive research, detailed competitive intelligence, and comprehensive strategic recommendations
+- Include actual metrics, numbers, estimates, and data-driven insights throughout
+- Research and identify specific competitors by name with detailed analysis
+- Provide detailed financial estimates based on industry benchmarks and available data
+- Include subsections within major sections for thorough coverage
+- Use professional business intelligence language and terminology
+- Be specific about geographic presence, operational details, and market positioning
+- Include risk assessments, opportunity scoring, and strategic recommendations
 
-1. EXECUTIVE SUMMARY - High-level overview, key findings, opportunity score (1-10)
-2. COMPANY OVERVIEW - Business model, products/services, history, leadership, geographic presence
-3. MARKET ANALYSIS - Industry overview, TAM, market positioning, growth opportunities
-4. COMPETITIVE INTELLIGENCE - Direct competitors (3-5), competitive advantages/disadvantages, market share estimates
-5. OPERATIONAL ASSESSMENT - Technology stack, operational capabilities, scalability, key metrics
-6. FINANCIAL ANALYSIS - Revenue model, estimated revenue, cost structure, financial health indicators
-7. DIGITAL PRESENCE & MARKETING - Website analysis, SEO, social media, content marketing effectiveness
-8. STRATEGIC ASSESSMENT - SWOT analysis, growth trajectory
-9. OPPORTUNITY ANALYSIS FOR RECIPE LABS - Engagement opportunities, service alignment, estimated value, success probability
-10. RECOMMENDED ACTIONS - Next steps, service tiers, timeline, risk mitigation strategies
+**REPORT STRUCTURE - Generate ALL sections with comprehensive detail:**
 
-**FORMAT:** Return ONLY HTML content using this structure:
+1. **EXECUTIVE SUMMARY**
+   - High-level overview of company, market position, and strategic assessment
+   - Key findings and critical insights (3-5 bullet points)
+   - Overall opportunity score (1-10 scale) with detailed justification
+   - Key opportunity score badge with explanation
+   - Data grid showing key metrics (years in business, service area, business model, etc.)
+   - Strategic recommendation summary
+
+2. **COMPANY OVERVIEW**
+   - **Business Model & Revenue Streams**: Detailed breakdown of primary and secondary revenue channels, pricing strategy, revenue model analysis
+   - **Products/Services Analysis**: Comprehensive list of offerings, unique selling points, service tiers
+   - **Company History & Background**: Founding date, evolution, key milestones, growth trajectory
+   - **Leadership Team**: Key executives, ownership structure, management background (if available)
+   - **Geographic Presence & Scale**: Locations, service markets, geographic reach, expansion plans
+   - **Operational Hours & Accessibility**: Hours of operation, accessibility strategy, customer acquisition approach
+   - **Brand Positioning**: Market positioning, target demographic, brand messaging
+
+3. **MARKET ANALYSIS**
+   - **Industry Overview**: Industry size, growth trends, market dynamics, regulatory environment
+   - **Total Addressable Market (TAM)**: Market size estimates, serviceable addressable market, market share estimates
+   - **Market Positioning**: Competitive positioning, market segment analysis, differentiation factors
+   - **Growth Opportunities & Threats**: Emerging trends, market opportunities, industry threats
+   - **Target Demographic Analysis**: Detailed customer segmentation, demographic profiles, psychographic analysis
+   - **Market Trends**: Current industry trends affecting the company, future outlook
+
+4. **COMPETITIVE INTELLIGENCE**
+   - **Direct Competitors Analysis**: Identify and analyze 3-5 specific competitors by name with:
+     * Company name, location, type
+     * Competitive advantages and disadvantages
+     * Market positioning relative to target company
+     * Estimated market share
+   - **Competitive Positioning Matrix**: Visual comparison of competitors
+   - **Competitive Advantages**: Detailed list of target company's competitive strengths
+   - **Competitive Disadvantages**: Detailed list of vulnerabilities and weaknesses
+   - **Market Share Estimates**: Estimated market share for target company and competitors
+   - **Competitive Moat Assessment**: Analysis of defensible competitive advantages
+
+5. **OPERATIONAL ASSESSMENT**
+   - **Technology Stack & Infrastructure**: Current technology assessment, systems in use, technology gaps
+   - **Operational Capabilities**: Strengths and constraints, operational efficiency, scalability analysis
+   - **Key Operational Metrics**: Capacity utilization, operational hours, efficiency metrics
+   - **Scalability Analysis**: Growth constraints, expansion potential, operational bottlenecks
+   - **Locations Analysis**: Facility details, geographic distribution, location advantages
+
+6. **FINANCIAL ANALYSIS**
+   - **Revenue Model Analysis**: Detailed revenue breakdown by source, revenue streams, pricing strategy
+   - **Estimated Revenue**: Annual revenue estimates based on industry benchmarks and available data
+   - **Cost Structure Analysis**: Cost breakdown, margin analysis, fixed vs variable costs
+   - **Financial Health Indicators**: Profitability estimates, financial stability indicators, debt analysis
+   - **Pricing Strategy**: Pricing model, price points, competitive pricing analysis
+   - **Financial Performance Modeling**: Revenue projections, margin estimates, financial metrics
+
+7. **DIGITAL PRESENCE & MARKETING**
+   - **Website Analysis**: UX assessment, functionality, messaging, mobile optimization, conversion optimization
+   - **SEO & Online Visibility**: Search ranking analysis, keyword positioning, backlink profile, local SEO
+   - **Social Media Presence**: Platform analysis, follower counts, engagement rates, content strategy, benchmark comparisons
+   - **Content Marketing Strategy**: Content production, content effectiveness, content gaps
+   - **Digital Marketing Effectiveness**: Paid advertising presence, conversion rates, digital marketing gaps
+   - **Brand Positioning Online**: Digital brand presence, online reputation, review analysis
+
+8. **STRATEGIC ASSESSMENT**
+   - **SWOT Analysis**: Comprehensive Strengths, Weaknesses, Opportunities, Threats with detailed explanations
+   - **Growth Trajectory Assessment**: Current state, growth constraints, growth potential, expansion opportunities
+   - **Strategic Partnerships & Ecosystem**: Key partnerships, partnership value, ecosystem dynamics
+   - **Innovation & R&D Focus**: Innovation initiatives, technology adoption, future investments
+   - **Risk Factors**: Operational risks, financial risks, market risks, strategic risks
+
+9. **OPPORTUNITY ANALYSIS FOR RECIPE LABS**
+   - **Potential Engagement Opportunities**: 4-6 specific service opportunities with:
+     * Service description
+     * Value proposition
+     * Complexity assessment
+     * Estimated impact (quantified)
+   - **Service Offerings Alignment**: How Recipe Labs services align with company needs
+   - **Estimated Engagement Value**: Initial contract value range, annual recurring revenue, implementation timeline
+   - **Success Probability Assessment**: Probability of success (percentage) with justification
+   - **Client Fit Scoring**: Overall fit score (1-10) with detailed rationale
+
+10. **RECOMMENDED ACTIONS**
+    - **Specific Next Steps for Engagement**: Phase 1 (Initial Contact), Phase 2 (Discovery & Proposal), Phase 3 (Implementation) with timelines
+    - **Recommended Service Tiers**: Starter Package, Professional Package, Enterprise Package with pricing and features
+    - **Timeline & Milestones**: Month-by-month implementation timeline with deliverables
+    - **Risk Mitigation Strategies**: Payment structure recommendations, risk mitigation approaches, success factors
+    - **Critical Success Factors**: 4-6 key factors for successful engagement
+
+**HTML FORMAT REQUIREMENTS:**
+
+Use this exact structure for sections:
 
 <div class="report-section">
     <h2>SECTION TITLE</h2>
     <div class="report-card">
-        <p>Content here...</p>
+        <div class="card-title">Subsection Title</div>
+        <p>Detailed content...</p>
+        <ul>
+            <li>Bullet points for lists</li>
+        </ul>
         <div class="highlight-box">
-            <strong>Key Point:</strong> Important information
+            <strong>Key Point:</strong> Important highlighted information
+        </div>
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="data-label">Metric Name</div>
+                <div class="data-value">Value</div>
+            </div>
         </div>
     </div>
 </div>
 
-Use minimalist black and white styling. Be specific, data-driven, and include actual metrics and numbers where possible.`;
+**STYLING CLASSES AVAILABLE:**
+- \`.report-section\` - Main section container
+- \`.report-card\` - Card container for content
+- \`.card-title\` - Subsection titles
+- \`.highlight-box\` - Important information boxes
+- \`.warning-box\` - Warning/attention boxes
+- \`.danger-box\` - Risk/critical issues
+- \`.success-box\` - Positive indicators
+- \`.data-grid\` - Grid layout for metrics
+- \`.data-item\` - Individual metric container
+- \`.data-label\` - Metric label
+- \`.data-value\` - Metric value (use classes: \`.metric-positive\`, \`.metric-negative\`, \`.metric-neutral\`)
+
+**CRITICAL INSTRUCTIONS:**
+- Be EXTREMELY thorough and detailed - this is a deep dive analysis
+- Include specific numbers, percentages, dollar amounts, and metrics throughout
+- Research and name specific competitors (don't use generic terms)
+- Provide detailed financial estimates based on industry data
+- Include multiple subsections within major sections
+- Use data grids and highlight boxes to emphasize key information
+- Write in professional business intelligence style
+- Focus on actionable insights for Recipe Labs engagement
+- Include risk assessments and opportunity scoring
+- Make this report comprehensive enough to be used for strategic decision-making
+
+Generate the complete report now.`;
 
             try {
                 updateLoadingStatus('Generating comprehensive report with Google AI...');
@@ -1322,7 +1494,7 @@ Use minimalist black and white styling. Be specific, data-driven, and include ac
                             temperature: 0.7,
                             topK: 40,
                             topP: 0.95,
-                            maxOutputTokens: 8192,
+                            maxOutputTokens: 16384,
                         }
                     })
                 });
