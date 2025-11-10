@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Labs - Automotive Intelligence Report Viewer</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+
+    const RECIPE_LABS_COLORS = {
+      primary: '#00D9FF',
+      secondary: '#FF6B35',
+      accent: '#FFD23F',
+      background: '#0A0E27',
+      surface: '#151B3D',
+      surfaceLight: '#1E2749',
+      text: '#E8EAF6',
+      textSecondary: '#B0B8D4',
+      success: '#4CAF50',
+      warning: '#FFC107',
+      error: '#FF5252',
+      gradient: 'linear-gradient(135deg, #00D9FF 0%, #0066FF 100%)'
+    };
+
+    const CHART_COLORS = ['#00D9FF', '#FF6B35', '#FFD23F', '#4CAF50', '#9C27B0', '#FF5252'];
+
+    function LeadReportViewer() {
+      const [csvData, setCSVData] = useState(null);
+      const [metrics, setMetrics] = useState(null);
+      const [activeView, setActiveView] = useState('overview');
+      const [searchTerm, setSearchTerm] = useState('');
+      const [sortConfig, setSortConfig] = useState(null);
+
+      const parseCSV = (csvText) => {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const rows = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const row = {};
+          headers.forEach((header, index) => {
+            const value = values[index];
+            const numValue = parseFloat(value);
+            row[header] = isNaN(numValue) ? value : numValue;
+          });
+          return row;
+        });
+        return { headers, rows };
+      };
+
+      const calculateMetrics = (data) => {
+        const uniqueValues = {};
+        const numericSummaries = {};
+
+        data.headers.forEach(header => {
+          const values = data.rows.map(row => row[header]);
+          const uniqueCount = new Set(values).size;
+          uniqueValues[header] = uniqueCount;
+
+          const numericValues = values.filter(v => typeof v === 'number');
+          if (numericValues.length > 0) {
+            const sum = numericValues.reduce((a, b) => a + b, 0);
+            numericSummaries[header] = {
+              min: Math.min(...numericValues),
+              max: Math.max(...numericValues),
+              avg: sum / numericValues.length,
+              sum
+            };
+          }
+        });
+
+        return {
+          totalRecords: data.rows.length,
+          uniqueValues,
+          numericSummaries
+        };
+      };
+
+      const handleFileUpload = (event) => {
+        const file = event.target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const text = e.target?.result;
+            const parsed = parseCSV(text);
+            setCSVData(parsed);
+            setMetrics(calculateMetrics(parsed));
+          };
+          reader.readAsText(file);
+        }
+      };
+
+      const filteredAndSortedData = useMemo(() => {
+        if (!csvData) return [];
+        
+        let filtered = csvData.rows.filter(row =>
+          Object.values(row).some(value =>
+            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        );
+
+        if (sortConfig) {
+          filtered.sort((a, b) => {
+            const aVal = a[sortConfig.key];
+            const bVal = b[sortConfig.key];
+            
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+        }
+
+        return filtered;
+      }, [csvData, searchTerm, sortConfig]);
+
+      const handleSort = (key) => {
+        setSortConfig(current => {
+          if (current?.key === key) {
+            return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+          }
+          return { key, direction: 'asc' };
+        });
+      };
+
+      const renderCharts = () => {
+        if (!csvData || !metrics) return null;
+
+        const numericColumns = Object.keys(metrics.numericSummaries);
+        const categoricalColumns = csvData.headers.filter(h => !numericColumns.includes(h));
+
+        const topCategoriesData = categoricalColumns.slice(0, 2).map(column => {
+          const counts = {};
+          csvData.rows.forEach(row => {
+            const value = String(row[column]);
+            counts[value] = (counts[value] || 0) + 1;
+          });
+          return {
+            column,
+            data: Object.entries(counts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 8)
+              .map(([name, value]) => ({ name, value }))
+          };
+        });
+
+        const numericTrendsData = numericColumns.slice(0, 3).map(column => ({
+          column,
+          data: csvData.rows.map((row, index) => ({
+            index: index + 1,
+            value: row[column]
+          }))
+        }));
+
+        return (
+          <div className="charts-grid">
+            {topCategoriesData.map((chartData, idx) => (
+              <div key={idx} className="chart-card">
+                <h3>{chartData.column} Distribution</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={chartData.data}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={(entry) => `${entry.name}: ${entry.value}`}
+                    >
+                      {chartData.data.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+
+            {numericTrendsData.map((chartData, idx) => (
+              <div key={idx} className="chart-card">
+                <h3>{chartData.column} Trend</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={chartData.data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2A3150" />
+                    <XAxis dataKey="index" stroke={RECIPE_LABS_COLORS.textSecondary} />
+                    <YAxis stroke={RECIPE_LABS_COLORS.textSecondary} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: RECIPE_LABS_COLORS.surface,
+                        border: `1px solid ${RECIPE_LABS_COLORS.primary}`,
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={RECIPE_LABS_COLORS.primary}
+                      strokeWidth={2}
+                      dot={{ fill: RECIPE_LABS_COLORS.primary, r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ))}
+
+            {numericColumns.length > 0 && (
+              <div className="chart-card full-width">
+                <h3>Numeric Column Comparison</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={numericColumns.map(col => ({
+                      name: col,
+                      Average: metrics.numericSummaries[col].avg,
+                      Max: metrics.numericSummaries[col].max,
+                      Min: metrics.numericSummaries[col].min
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2A3150" />
+                    <XAxis dataKey="name" stroke={RECIPE_LABS_COLORS.textSecondary} />
+                    <YAxis stroke={RECIPE_LABS_COLORS.textSecondary} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: RECIPE_LABS_COLORS.surface,
+                        border: `1px solid ${RECIPE_LABS_COLORS.primary}`,
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="Average" fill={RECIPE_LABS_COLORS.primary} />
+                    <Bar dataKey="Max" fill={RECIPE_LABS_COLORS.secondary} />
+                    <Bar dataKey="Min" fill={RECIPE_LABS_COLORS.accent} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      return (
+        <div className="report-viewer">
+          <style>{`
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+              background: ${RECIPE_LABS_COLORS.background};
+              color: ${RECIPE_LABS_COLORS.text};
+            }
+
+            .report-viewer {
+              min-height: 100vh;
+              background: ${RECIPE_LABS_COLORS.background};
+            }
+
+            .header {
+              background: ${RECIPE_LABS_COLORS.surface};
+              border-bottom: 2px solid ${RECIPE_LABS_COLORS.primary};
+              padding: 1.5rem 2rem;
+              box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+            }
+
+            .header-content {
+              max-width: 1400px;
+              margin: 0 auto;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+
+            .logo {
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+            }
+
+            .logo-icon {
+              width: 50px;
+              height: 50px;
+              background: ${RECIPE_LABS_COLORS.gradient};
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 24px;
+              color: white;
+              box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            }
+
+            .logo-text h1 {
+              font-size: 1.8rem;
+              font-weight: 700;
+              background: ${RECIPE_LABS_COLORS.gradient};
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+            }
+
+            .logo-text p {
+              font-size: 0.9rem;
+              color: ${RECIPE_LABS_COLORS.textSecondary};
+              font-weight: 500;
+            }
+
+            .upload-section {
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+            }
+
+            .file-input-wrapper {
+              position: relative;
+              overflow: hidden;
+            }
+
+            .file-input-wrapper input[type="file"] {
+              position: absolute;
+              left: -9999px;
+            }
+
+            .file-input-label {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.75rem 1.5rem;
+              background: ${RECIPE_LABS_COLORS.gradient};
+              color: white;
+              border-radius: 8px;
+              cursor: pointer;
+              font-weight: 600;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            }
+
+            .file-input-label:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(0, 217, 255, 0.4);
+            }
+
+            .nav-tabs {
+              display: flex;
+              gap: 0.5rem;
+              background: ${RECIPE_LABS_COLORS.surfaceLight};
+              padding: 0.5rem;
+              border-radius: 10px;
+            }
+
+            .nav-tab {
+              padding: 0.75rem 1.5rem;
+              background: transparent;
+              color: ${RECIPE_LABS_COLORS.textSecondary};
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              font-weight: 600;
+              transition: all 0.3s ease;
+            }
+
+            .nav-tab.active {
+              background: ${RECIPE_LABS_COLORS.gradient};
+              color: white;
+              box-shadow: 0 2px 10px rgba(0, 217, 255, 0.3);
+            }
+
+            .nav-tab:hover:not(.active) {
+              background: rgba(0, 217, 255, 0.1);
+              color: ${RECIPE_LABS_COLORS.primary};
+            }
+
+            .container {
+              max-width: 1400px;
+              margin: 2rem auto;
+              padding: 0 2rem;
+            }
+
+            .empty-state {
+              text-align: center;
+              padding: 4rem 2rem;
+              background: ${RECIPE_LABS_COLORS.surface};
+              border-radius: 16px;
+              border: 2px dashed ${RECIPE_LABS_COLORS.primary};
+            }
+
+            .empty-state-icon {
+              width: 120px;
+              height: 120px;
+              margin: 0 auto 2rem;
+              background: ${RECIPE_LABS_COLORS.gradient};
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 3rem;
+              box-shadow: 0 8px 30px rgba(0, 217, 255, 0.3);
+            }
+
+            .empty-state h2 {
+              font-size: 2rem;
+              margin-bottom: 1rem;
+              color: ${RECIPE_LABS_COLORS.text};
+            }
+
+            .empty-state p {
+              color: ${RECIPE_LABS_COLORS.textSecondary};
+              font-size: 1.1rem;
+            }
+
+            .metrics-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 1.5rem;
+              margin-bottom: 2rem;
+            }
+
+            .metric-card {
+              background: ${RECIPE_LABS_COLORS.surface};
+              padding: 1.5rem;
+              border-radius: 12px;
+              border: 1px solid ${RECIPE_LABS_COLORS.surfaceLight};
+              transition: all 0.3s ease;
+            }
+
+            .metric-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 8px 30px rgba(0, 217, 255, 0.2);
+              border-color: ${RECIPE_LABS_COLORS.primary};
+            }
+
+            .metric-label {
+              font-size: 0.875rem;
+              color: ${RECIPE_LABS_COLORS.textSecondary};
+              text-transform: uppercase;
+              letter-spacing: 1px;
+              margin-bottom: 0.5rem;
+              font-weight: 600;
+            }
+
+            .metric-value {
+              font-size: 2.5rem;
+              font-weight: 700;
+              background: ${RECIPE_LABS_COLORS.gradient};
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              line-height: 1.2;
+            }
+
+            .metric-detail {
+              font-size: 0.875rem;
+              color: ${RECIPE_LABS_COLORS.textSecondary};
+              margin-top: 0.5rem;
+            }
+
+            .search-bar {
+              margin-bottom: 1.5rem;
+            }
+
+            .search-input {
+              width: 100%;
+              padding: 1rem 1.5rem;
+              background: ${RECIPE_LABS_COLORS.surface};
+              border: 2px solid ${RECIPE_LABS_COLORS.surfaceLight};
+              border-radius: 10px;
+              color: ${RECIPE_LABS_COLORS.text};
+              font-size: 1rem;
+              transition: all 0.3s ease;
+            }
+
+            .search-input:focus {
+              outline: none;
+              border-color: ${RECIPE_LABS_COLORS.primary};
+              box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
+            }
+
+            .table-container {
+              background: ${RECIPE_LABS_COLORS.surface};
+              border-radius: 12px;
+              overflow: hidden;
+              border: 1px solid ${RECIPE_LABS_COLORS.surfaceLight};
+            }
+
+            .data-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            .data-table thead {
+              background: ${RECIPE_LABS_COLORS.surfaceLight};
+            }
+
+            .data-table th {
+              padding: 1rem;
+              text-align: left;
+              font-weight: 600;
+              color: ${RECIPE_LABS_COLORS.primary};
+              text-transform: uppercase;
+              font-size: 0.875rem;
+              letter-spacing: 1px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              user-select: none;
+            }
+
+            .data-table th:hover {
+              background: rgba(0, 217, 255, 0.1);
+            }
+
+            .data-table td {
+              padding: 1rem;
+              border-top: 1px solid ${RECIPE_LABS_COLORS.surfaceLight};
+              color: ${RECIPE_LABS_COLORS.text};
+            }
+
+            .data-table tbody tr {
+              transition: all 0.2s ease;
+            }
+
+            .data-table tbody tr:hover {
+              background: rgba(0, 217, 255, 0.05);
+            }
+
+            .sort-indicator {
+              margin-left: 0.5rem;
+              font-size: 0.75rem;
+            }
+
+            .charts-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+              gap: 1.5rem;
+            }
+
+            .chart-card {
+              background: ${RECIPE_LABS_COLORS.surface};
+              padding: 1.5rem;
+              border-radius: 12px;
+              border: 1px solid ${RECIPE_LABS_COLORS.surfaceLight};
+            }
+
+            .chart-card.full-width {
+              grid-column: 1 / -1;
+            }
+
+            .chart-card h3 {
+              margin-bottom: 1rem;
+              color: ${RECIPE_LABS_COLORS.primary};
+              font-size: 1.1rem;
+              font-weight: 600;
+            }
+
+            @media (max-width: 768px) {
+              .header-content {
+                flex-direction: column;
+                gap: 1rem;
+              }
+
+              .upload-section {
+                flex-direction: column;
+                width: 100%;
+              }
+
+              .nav-tabs {
+                width: 100%;
+              }
+
+              .metrics-grid {
+                grid-template-columns: 1fr;
+              }
+
+              .charts-grid {
+                grid-template-columns: 1fr;
+              }
+            }
+          `}</style>
+
+          <header className="header">
+            <div className="header-content">
+              <div className="logo">
+                <div className="logo-icon">RL</div>
+                <div className="logo-text">
+                  <h1>Recipe Labs</h1>
+                  <p>Automotive Intelligence Suite</p>
+                </div>
+              </div>
+              <div className="upload-section">
+                <div className="file-input-wrapper">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    id="csv-upload"
+                  />
+                  <label htmlFor="csv-upload" className="file-input-label">
+                    📁 Upload CSV Report
+                  </label>
+                </div>
+                {csvData && (
+                  <div className="nav-tabs">
+                    <button
+                      className={`nav-tab ${activeView === 'overview' ? 'active' : ''}`}
+                      onClick={() => setActiveView('overview')}
+                    >
+                      Overview
+                    </button>
+                    <button
+                      className={`nav-tab ${activeView === 'table' ? 'active' : ''}`}
+                      onClick={() => setActiveView('table')}
+                    >
+                      Data Table
+                    </button>
+                    <button
+                      className={`nav-tab ${activeView === 'charts' ? 'active' : ''}`}
+                      onClick={() => setActiveView('charts')}
+                    >
+                      Analytics
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <main className="container">
+            {!csvData ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">📊</div>
+                <h2>No Report Loaded</h2>
+                <p>Upload a CSV file to view your automotive intelligence report</p>
+              </div>
+            ) : (
+              <>
+                {activeView === 'overview' && metrics && (
+                  <>
+                    <div className="metrics-grid">
+                      <div className="metric-card">
+                        <div className="metric-label">Total Records</div>
+                        <div className="metric-value">{metrics.totalRecords.toLocaleString()}</div>
+                        <div className="metric-detail">Complete data entries</div>
+                      </div>
+                      <div className="metric-card">
+                        <div className="metric-label">Data Points</div>
+                        <div className="metric-value">{csvData.headers.length}</div>
+                        <div className="metric-detail">Unique fields tracked</div>
+                      </div>
+                      <div className="metric-card">
+                        <div className="metric-label">Numeric Fields</div>
+                        <div className="metric-value">
+                          {Object.keys(metrics.numericSummaries).length}
+                        </div>
+                        <div className="metric-detail">Quantitative metrics</div>
+                      </div>
+                      <div className="metric-card">
+                        <div className="metric-label">Categorical Fields</div>
+                        <div className="metric-value">
+                          {csvData.headers.length - Object.keys(metrics.numericSummaries).length}
+                        </div>
+                        <div className="metric-detail">Qualitative attributes</div>
+                      </div>
+                    </div>
+
+                    <div className="metrics-grid">
+                      {Object.entries(metrics.numericSummaries).map(([field, summary]) => (
+                        <div key={field} className="metric-card">
+                          <div className="metric-label">{field}</div>
+                          <div className="metric-value">
+                            {summary.avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                          </div>
+                          <div className="metric-detail">
+                            Min: {summary.min} | Max: {summary.max} | Sum: {summary.sum.toLocaleString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {activeView === 'table' && (
+                  <>
+                    <div className="search-bar">
+                      <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Search records..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="table-container">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            {csvData.headers.map(header => (
+                              <th key={header} onClick={() => handleSort(header)}>
+                                {header}
+                                {sortConfig?.key === header && (
+                                  <span className="sort-indicator">
+                                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                  </span>
+                                )}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredAndSortedData.map((row, idx) => (
+                            <tr key={idx}>
+                              {csvData.headers.map(header => (
+                                <td key={header}>
+                                  {typeof row[header] === 'number'
+                                    ? row[header].toLocaleString()
+                                    : row[header]}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+
+                {activeView === 'charts' && renderCharts()}
+              </>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<LeadReportViewer />, document.getElementById('root'));
+  </script>
+</body>
+</html>
