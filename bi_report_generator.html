@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Labs - Business Intelligence Report Generator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; 
+            line-height: 1.7; 
+            color: #ffffff; 
+            background: #000000; 
+            padding: 20px; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: linear-gradient(to bottom, #1a1a1a, #0f0f0f);
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 24px; 
+            overflow: hidden; 
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6),
+                        0 0 1px rgba(255, 255, 255, 0.1) inset; 
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); 
+            color: white; 
+            padding: 80px 60px; 
+            text-align: center; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+        
+        .header::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: 0; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 100px; 
+            height: 1px; 
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent); 
+        }
+        
+        .header h1 { 
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 3.5em; 
+            margin-bottom: 20px; 
+            font-weight: 800; 
+            letter-spacing: -0.02em; 
+            background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-subtitle {
+            font-size: 1.3em;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            margin-bottom: 30px;
+        }
+        
+        .header-meta { 
+            display: flex; 
+            justify-content: center; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+            margin-top: 30px; 
+        }
+        
+        .header-meta-item { 
+            background: rgba(255, 255, 255, 0.06); 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.12); 
+            font-size: 0.85em; 
+            letter-spacing: 0.05em; 
+            text-transform: uppercase; 
+            font-weight: 600; 
+        }
+        
+        .classification-banner {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(153, 27, 27, 0.15));
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            padding: 20px;
+            margin: 30px 60px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            font-size: 0.9em;
+            color: #fca5a5;
+        }
+        
+        .content { 
+            padding: 60px; 
+        }
+        
+        .section { 
+            margin-bottom: 60px; 
+        }
+        
+        .section-header h2 { 
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2.4em; 
+            margin: 50px 0 30px 0; 
+            color: #ffffff; 
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+        
+        .section-header h3 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.8em;
+            margin: 40px 0 20px 0;
+            color: #ffffff;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        
+        .section-header h4 {
+            font-size: 1.3em;
+            margin: 30px 0 15px 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+        
+        .card { 
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)); 
+            border-radius: 16px; 
+            padding: 35px; 
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            margin: 30px 0; 
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
+            border-left: 4px solid rgba(59, 130, 246, 0.5);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.1), rgba(202, 138, 4, 0.05));
+            border-left: 4px solid rgba(234, 179, 8, 0.5);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        
+        .danger-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+            border-left: 4px solid rgba(239, 68, 68, 0.5);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        
+        .success-box {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+            border-left: 4px solid rgba(34, 197, 94, 0.5);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .data-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .data-label {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+        
+        .data-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        
+        .metric-positive { color: #4ade80; }
+        .metric-negative { color: #f87171; }
+        .metric-neutral { color: #fbbf24; }
+        
+        .executive-summary {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.08));
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            padding: 40px;
+            border-radius: 16px;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+            margin: 60px 0;
+        }
+        
+        ul, ol {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 12px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        p {
+            margin: 15px 0;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #0a0a0a 0%, #000000 100%);
+            padding: 60px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+        }
+
+        /* Generator Form Styles */
+        .generator-section {
+            padding: 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1em;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 18px 40px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8));
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.02em;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 1), rgba(37, 99, 235, 1));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid rgba(59, 130, 246, 0.8);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            color: #fca5a5;
+            margin: 20px 0;
+        }
+
+        #reportOutput {
+            display: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Business Intelligence Report Generator</h1>
+            <div class="header-subtitle">Automated AI-Powered Company Analysis</div>
+            <div class="header-meta">
+                <div class="header-meta-item">Recipe Labs</div>
+                <div class="header-meta-item">AI-Powered</div>
+                <div class="header-meta-item">AISim Technology</div>
+            </div>
+        </div>
+
+        <!-- Generator Form -->
+        <div id="generatorForm" class="generator-section">
+            <div class="card">
+                <div class="card-title">Company Website Analysis</div>
+                
+                <form id="biForm" onsubmit="generateReport(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="websiteUrl">Company Website URL *</label>
+                        <input 
+                            type="url" 
+                            id="websiteUrl" 
+                            class="form-input" 
+                            placeholder="https://example.com" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="companyName">Company Name (Optional)</label>
+                        <input 
+                            type="text" 
+                            id="companyName" 
+                            class="form-input" 
+                            placeholder="Leave blank for AI to extract"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="apiKey">Anthropic API Key *</label>
+                        <input 
+                            type="password" 
+                            id="apiKey" 
+                            class="form-input" 
+                            placeholder="sk-ant-..."
+                            required
+                        >
+                        <small style="color: rgba(255, 255, 255, 0.5); display: block; margin-top: 5px;">
+                            Get your API key from <a href="https://console.anthropic.com/" target="_blank" style="color: #60a5fa;">console.anthropic.com</a>
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="analysisDepth">Analysis Depth</label>
+                        <select id="analysisDepth" class="form-input">
+                            <option value="standard">Standard (5-10 min)</option>
+                            <option value="comprehensive" selected>Comprehensive (10-15 min)</option>
+                            <option value="deep">Deep Dive (15-20 min)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="additionalContext">Additional Context (Optional)</label>
+                        <textarea 
+                            id="additionalContext" 
+                            class="form-input form-textarea" 
+                            placeholder="Add any specific information you want the AI to consider..."
+                        ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn" id="generateBtn">
+                        Generate Business Intelligence Report
+                    </button>
+                </form>
+            </div>
+
+            <div class="highlight-box" style="margin-top: 30px;">
+                <strong>What This Tool Does:</strong>
+                <ul style="margin-top: 10px;">
+                    <li>Scrapes and analyzes the company's website</li>
+                    <li>Researches company information, market positioning, and competitive landscape</li>
+                    <li>Generates comprehensive business intelligence including financials, operations, and strategic insights</li>
+                    <li>Creates a professional report in Recipe Labs' signature format</li>
+                    <li>All processing happens securely in your browser</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <h3 style="margin: 20px 0;">Generating Business Intelligence Report...</h3>
+            <p id="loadingStatus">Initializing analysis...</p>
+            <div class="highlight-box" style="max-width: 600px; margin: 30px auto;">
+                <strong>Analysis Progress:</strong>
+                <ul id="progressSteps" style="text-align: left; margin-top: 15px;">
+                    <li id="step1">⏳ Scraping website content...</li>
+                    <li id="step2">⏳ Researching company background...</li>
+                    <li id="step3">⏳ Analyzing market positioning...</li>
+                    <li id="step4">⏳ Conducting competitive intelligence...</li>
+                    <li id="step5">⏳ Generating strategic recommendations...</li>
+                    <li id="step6">⏳ Formatting report...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Report Output -->
+        <div id="reportOutput">
+            <!-- Generated report will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        let currentApiKey = '';
+        
+        async function generateReport(event) {
+            event.preventDefault();
+            
+            const websiteUrl = document.getElementById('websiteUrl').value;
+            const companyName = document.getElementById('companyName').value;
+            const apiKey = document.getElementById('apiKey').value;
+            const analysisDepth = document.getElementById('analysisDepth').value;
+            const additionalContext = document.getElementById('additionalContext').value;
+            
+            currentApiKey = apiKey;
+            
+            // Show loading state
+            document.getElementById('generatorForm').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('reportOutput').style.display = 'none';
+            
+            try {
+                // Step 1: Scrape website
+                updateProgress(1, 'in-progress');
+                const websiteContent = await scrapeWebsite(websiteUrl);
+                updateProgress(1, 'complete');
+                
+                // Step 2-6: Generate report with AI
+                updateProgress(2, 'in-progress');
+                const report = await generateAIReport(
+                    websiteUrl,
+                    companyName,
+                    websiteContent,
+                    analysisDepth,
+                    additionalContext
+                );
+                
+                // Display report
+                displayReport(report, websiteUrl, companyName);
+                
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showError(error.message);
+            }
+        }
+        
+        async function scrapeWebsite(url) {
+            try {
+                // Use web_fetch through Claude API to get website content
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': currentApiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 4096,
+                        messages: [{
+                            role: 'user',
+                            content: `Please fetch and extract key information from this website: ${url}
+                            
+Extract:
+1. Company name and description
+2. Products/services offered
+3. Target market
+4. Key features or unique selling points
+5. Any pricing information
+6. Contact information
+7. Social media links
+8. Any other relevant business information
+
+Format the response as structured data.`
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                return data.content[0].text;
+                
+            } catch (error) {
+                throw new Error(`Failed to scrape website: ${error.message}`);
+            }
+        }
+        
+        async function generateAIReport(url, companyName, websiteContent, depth, context) {
+            updateProgress(3, 'in-progress');
+            
+            const depthInstructions = {
+                'standard': 'Provide a comprehensive but concise analysis covering all major areas.',
+                'comprehensive': 'Provide a detailed analysis with deep insights across all sections.',
+                'deep': 'Provide an exhaustive analysis with extensive research, detailed competitive intelligence, and comprehensive strategic recommendations.'
+            };
+            
+            const prompt = `You are a senior business intelligence analyst at Recipe Labs. Generate a COMPREHENSIVE business intelligence report for the following company.
+
+**Company Website:** ${url}
+${companyName ? `**Company Name:** ${companyName}` : ''}
+
+**Website Analysis Results:**
+${websiteContent}
+
+${context ? `**Additional Context:**
+${context}` : ''}
+
+**Analysis Depth:** ${depthInstructions[depth]}
+
+**REPORT REQUIREMENTS:**
+
+Generate a professional, detailed business intelligence report with the following sections:
+
+1. **EXECUTIVE SUMMARY**
+   - High-level overview of company, market position, and strategic assessment
+   - Key findings and critical insights
+   - Overall opportunity score and recommendation
+
+2. **COMPANY OVERVIEW**
+   - Business model and revenue streams
+   - Products/services analysis
+   - Company history and background (research if needed)
+   - Leadership team (if available)
+   - Geographic presence and scale
+
+3. **MARKET ANALYSIS**
+   - Industry overview and trends
+   - Total addressable market (TAM)
+   - Market positioning and competitive landscape
+   - Growth opportunities and threats
+
+4. **COMPETITIVE INTELLIGENCE**
+   - Direct competitors analysis (research minimum 3-5 competitors)
+   - Competitive advantages and disadvantages
+   - Market share estimates
+   - Competitive positioning matrix
+
+5. **OPERATIONAL ASSESSMENT**
+   - Technology stack and infrastructure
+   - Operational capabilities and constraints
+   - Scalability analysis
+   - Key operational metrics
+
+6. **FINANCIAL ANALYSIS**
+   - Revenue model analysis
+   - Estimated revenue (if public) or revenue indicators
+   - Cost structure analysis
+   - Financial health indicators
+   - Investment and funding history (if available)
+
+7. **DIGITAL PRESENCE & MARKETING**
+   - Website analysis (UX, functionality, messaging)
+   - SEO and online visibility
+   - Social media presence and engagement
+   - Content marketing strategy
+   - Digital marketing effectiveness
+
+8. **STRATEGIC ASSESSMENT**
+   - SWOT analysis (Strengths, Weaknesses, Opportunities, Threats)
+   - Growth trajectory assessment
+   - Strategic partnerships and ecosystem
+   - Innovation and R&D focus
+
+9. **OPPORTUNITY ANALYSIS FOR RECIPE LABS**
+   - Potential engagement opportunities
+   - Service offerings alignment
+   - Estimated engagement value
+   - Implementation complexity
+   - Success probability assessment
+
+10. **RECOMMENDED ACTIONS**
+    - Specific next steps for engagement
+    - Recommended service tiers
+    - Timeline and milestones
+    - Risk mitigation strategies
+
+**CRITICAL REQUIREMENTS:**
+- Be specific and data-driven
+- Include actual metrics, numbers, and estimates where possible
+- Research competitors and industry data
+- Provide actionable strategic insights
+- Use professional business intelligence language
+- Be comprehensive but concise
+- Focus on insights Recipe Labs can use for client acquisition
+
+**FORMAT:** Return ONLY the HTML content that should go inside the report container. Include proper section headers, cards, data grids, highlight boxes, and all styling classes as shown in the template. Do NOT include the full HTML structure, just the content sections.
+
+Start with the classification banner and end with a key strategic takeaway section.`;
+
+            try {
+                // Make multiple API calls for comprehensive analysis
+                const steps = [
+                    { step: 3, description: 'Analyzing market positioning' },
+                    { step: 4, description: 'Conducting competitive intelligence' },
+                    { step: 5, description: 'Generating strategic recommendations' }
+                ];
+                
+                let fullReport = '';
+                
+                // Generate comprehensive report
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': currentApiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 16000,
+                        temperature: 0.7,
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API request failed: ${errorData.error?.message || response.statusText}`);
+                }
+                
+                updateProgress(4, 'complete');
+                updateProgress(5, 'complete');
+                updateProgress(6, 'in-progress');
+                
+                const data = await response.json();
+                fullReport = data.content[0].text;
+                
+                updateProgress(6, 'complete');
+                
+                return fullReport;
+                
+            } catch (error) {
+                throw new Error(`Failed to generate AI report: ${error.message}`);
+            }
+        }
+        
+        function displayReport(reportContent, url, companyName) {
+            const today = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            const extractedName = companyName || extractCompanyNameFromContent(reportContent) || 'COMPANY';
+            
+            const fullReport = `
+                <div class="header">
+                    <h1>CONFIDENTIAL BUSINESS INTELLIGENCE REPORT</h1>
+                    <div class="header-subtitle">${extractedName.toUpperCase()}</div>
+                    <div class="header-meta">
+                        <div class="header-meta-item">Report Date: ${today}</div>
+                        <div class="header-meta-item">Confidential</div>
+                        <div class="header-meta-item">Recipe Labs Intelligence</div>
+                    </div>
+                </div>
+
+                <div class="classification-banner">
+                    ⚠️ CONFIDENTIAL - INTERNAL USE ONLY ⚠️<br>
+                    This document contains proprietary business intelligence and strategic analysis.
+                </div>
+
+                <div class="content">
+                    ${reportContent}
+                </div>
+
+                <div class="footer">
+                    <p><strong>DOCUMENT CLASSIFICATION: CONFIDENTIAL</strong></p>
+                    <p><strong>Prepared By:</strong> Recipe Labs Business Intelligence Division</p>
+                    <p><strong>Report Date:</strong> ${today}</p>
+                    <p><strong>Source URL:</strong> ${url}</p>
+                    <p><strong>Distribution:</strong> Limited to Recipe Labs Co-Founders Only</p>
+                    <p><strong>Retention:</strong> Duration of client relationship + 7 years</p>
+                    <br>
+                    <p style="opacity: 0.8; margin-top: 30px;">
+                        <em>Powered by AISim</em>
+                    </p>
+                </div>
+
+                <div class="content">
+                    <div class="action-buttons">
+                        <button onclick="downloadReport()" class="btn">Download Report (HTML)</button>
+                        <button onclick="resetGenerator()" class="btn btn-secondary">Generate Another Report</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('reportOutput').innerHTML = fullReport;
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('reportOutput').style.display = 'block';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function extractCompanyNameFromContent(content) {
+            // Try to extract company name from content
+            const match = content.match(/company[:\s]+([A-Z][A-Za-z\s&]+)/i);
+            return match ? match[1].trim() : null;
+        }
+        
+        function updateProgress(step, status) {
+            const stepElement = document.getElementById(`step${step}`);
+            if (!stepElement) return;
+            
+            const emoji = {
+                'complete': '✅',
+                'in-progress': '🔄',
+                'pending': '⏳'
+            };
+            
+            const text = stepElement.textContent.replace(/^[⏳✅🔄]\s*/, '');
+            stepElement.textContent = `${emoji[status]} ${text}`;
+            
+            if (status === 'in-progress') {
+                stepElement.style.color = '#60a5fa';
+                stepElement.style.fontWeight = '600';
+            } else if (status === 'complete') {
+                stepElement.style.color = '#4ade80';
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('generatorForm').style.display = 'block';
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <strong>Error Generating Report</strong><br>
+                ${message}<br><br>
+                <small>Please check your API key and try again. Make sure you have sufficient API credits.</small>
+            `;
+            
+            const form = document.getElementById('biForm');
+            form.parentNode.insertBefore(errorDiv, form);
+            
+            setTimeout(() => errorDiv.remove(), 10000);
+        }
+        
+        function downloadReport() {
+            const reportHtml = document.getElementById('reportOutput').innerHTML;
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Intelligence Report - Recipe Labs</title>
+    <style>
+        ${document.querySelector('style').textContent}
+    </style>
+</head>
+<body>
+    <div class="container">
+        ${reportHtml}
+    </div>
+</body>
+</html>`;
+            
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Business_Intelligence_Report_${new Date().getTime()}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function resetGenerator() {
+            document.getElementById('reportOutput').style.display = 'none';
+            document.getElementById('generatorForm').style.display = 'block';
+            document.getElementById('biForm').reset();
+            
+            // Reset progress indicators
+            for (let i = 1; i <= 6; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                if (stepElement) {
+                    const text = stepElement.textContent.replace(/^[⏳✅🔄]\s*/, '');
+                    stepElement.textContent = `⏳ ${text}`;
+                    stepElement.style.color = '';
+                    stepElement.style.fontWeight = '';
+                }
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Auto-save API key to localStorage
+        document.getElementById('apiKey').addEventListener('change', (e) => {
+            if (e.target.value && e.target.value.startsWith('sk-ant-')) {
+                localStorage.setItem('recipe_labs_api_key', e.target.value);
+            }
+        });
+
+        // Auto-load API key from localStorage
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem('recipe_labs_api_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+            }
+        });
+    </script>
+</body>
+</html>
+
